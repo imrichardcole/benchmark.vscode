@@ -15,15 +15,59 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+  ],
   "main": "./out/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "Benchmark",
+      "properties": {
+        "benchmark.binaries-directory": {
+          "type": "string",
+          "default": "build/Release",
+          "description": "Specifies the directory to load benchmark binaries."
+        }
+      }
+    },
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "benchmark-vscode.runBenchmarkBinary",
+          "when": "view == benchmarks && viewItem == benchmarkbinary"
+        },
+        {
+          "command": "benchmark-vscode.runBenchmark",
+          "when": "view == benchmarks && viewItem == benchmark"
+        }
+      ]
+    },
     "commands": [
       {
-        "command": "benchmark-vscode.success",
-        "title": "Run benchmarks"
+        "command": "benchmark-vscode.runBenchmarkBinary",
+        "title": "Discover/run benchmarks"
+      },
+      {
+        "command": "benchmark-vscode.runBenchmark",
+        "title": "Run this benchmark"
       }
-    ]
+    ],
+    "viewsContainers": {
+      "activitybar": [
+          {
+              "id": "benchmarks",
+              "title": "Benchmarks",
+              "icon": "images/icon.png"
+          }
+      ]
+    },
+    "views": {
+        "benchmarks": [
+            {
+                "id": "benchmarks",
+                "name": "Benchmarks"
+            }
+        ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

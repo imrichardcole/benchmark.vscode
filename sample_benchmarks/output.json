@@ -1,0 +1,55 @@
+{
+    "context": {
+      "date": "2024-09-08T07:36:47+01:00",
+      "host_name": "RLABW001",
+      "executable": "benchmark\\build\\Release\\benchmark.exe",
+      "num_cpus": 12,
+      "mhz_per_cpu": 2400,
+      "caches": [
+        {
+          "type": "Data",
+          "level": 1,
+          "size": 32768,
+          "num_sharing": 2
+        },
+        {
+          "type": "Instruction",
+          "level": 1,
+          "size": 32768,
+          "num_sharing": 2
+        },
+        {
+          "type": "Unified",
+          "level": 2,
+          "size": 262144,
+          "num_sharing": 2
+        },
+        {
+          "type": "Unified",
+          "level": 3,
+          "size": 12582912,
+          "num_sharing": 12
+        }
+      ],
+      "load_avg": [],
+      "library_version": "v1.9.0-6-g08fdf6eb",
+      "library_build_type": "release",
+      "json_schema_version": 1
+    },
+    "benchmarks": [
+      {
+        "name": "BM_SomeFunction",
+        "family_index": 0,
+        "per_family_instance_index": 0,
+        "run_name": "BM_SomeFunction",
+        "run_type": "iteration",
+        "repetitions": 1,
+        "repetition_index": 0,
+        "threads": 1,
+        "iterations": 1000000000000,
+        "real_time": 9.0000685304403304e-10,
+        "cpu_time": 0.0000000000000000e+00,
+        "time_unit": "ns"
+      }
+    ]
+  }
