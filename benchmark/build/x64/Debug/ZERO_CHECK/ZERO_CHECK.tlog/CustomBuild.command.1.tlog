@@ -1,0 +1,10 @@
+^C:\SANDBOX\WORK\VSCODE\BENCHMARK.VSCODE\BENCHMARK\BUILD\CMAKEFILES\5D66BFC60B81F9637E1F998D8509A001\GENERATE.STAMP.RULE
+setlocal
+C:\sandbox\devtools\cmake\3.20.2\bin\cmake.exe -SC:/sandbox/work/vscode/benchmark.vscode/benchmark -BC:/sandbox/work/vscode/benchmark.vscode/benchmark/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/sandbox/work/vscode/benchmark.vscode/benchmark/build/benchmark.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

@@ -1,0 +1,6 @@
+C:/sandbox/work/vscode/benchmark.vscode/benchmark/build/CMakeFiles/benchmark_sample.dir
+C:/sandbox/work/vscode/benchmark.vscode/benchmark/build/CMakeFiles/benchmark_string_validation.dir
+C:/sandbox/work/vscode/benchmark.vscode/benchmark/build/CMakeFiles/benchmark_heavy_maths.dir
+C:/sandbox/work/vscode/benchmark.vscode/benchmark/build/CMakeFiles/benchmark_stress.dir
+C:/sandbox/work/vscode/benchmark.vscode/benchmark/build/CMakeFiles/ALL_BUILD.dir
+C:/sandbox/work/vscode/benchmark.vscode/benchmark/build/CMakeFiles/ZERO_CHECK.dir

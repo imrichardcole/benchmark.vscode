@@ -1,0 +1,10 @@
+^C:\SANDBOX\WORK\VSCODE\BENCHMARK.VSCODE\BENCHMARK\CMAKELISTS.TXT
+setlocal
+C:\sandbox\devtools\cmake\3.20.2\bin\cmake.exe -SC:/sandbox/work/vscode/benchmark.vscode/benchmark -BC:/sandbox/work/vscode/benchmark.vscode/benchmark/build --check-stamp-file C:/sandbox/work/vscode/benchmark.vscode/benchmark/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

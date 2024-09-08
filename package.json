@@ -15,15 +15,37 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "benchmark-vscode.success",
-        "title": "Run benchmarks"
+        "command": "benchmark-vscode.runBinary",
+        "title": "Benchmark: run benchmarks"
+      },
+      {
+        "command": "benchmark-vscode.refresh",
+        "title": "Benchmark: refresh benchmarks"
       }
-    ]
+    ],
+    "viewsContainers": {
+      "activitybar": [
+          {
+              "id": "benchmarks",
+              "title": "Benchmarks",
+              "icon": "images/icon.png"
+          }
+      ]
+    },
+    "views": {
+        "benchmarks": [
+            {
+                "id": "benchmarks-data",
+                "name": "Benchmarks"
+            }
+        ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
