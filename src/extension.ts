@@ -19,6 +19,24 @@ export function activate(context: vscode.ExtensionContext) {
 
 	vscode.commands.registerCommand('benchmark-vscode.runTreeCommand', (path) => {
 		console.log("this would run " + path);
+		const { spawn } = require('node:child_process');
+		const benchmark_binary = spawn(path, ["--benchmark_format=json"]);
+
+		var scriptOutput = "";
+		benchmark_binary.on('exit', function (code: any) {
+			console.log("process exited with code - " + code);
+			try {
+				const output_json = JSON.parse(scriptOutput.toString());
+				vscode.window.showInformationMessage("Benchmark: finished running " + path);
+			} catch (e: any) {
+				const result = e.message;
+				vscode.window.showErrorMessage("Benchmark: issue running " + path);
+			}
+		});
+		benchmark_binary.stdout.on('data', (data: any) => {
+			scriptOutput += data;
+		});
+
 	});
 
 	vscode.window.registerTreeDataProvider('benchmarks-data', provider);
@@ -79,7 +97,7 @@ class BenchmarkBinary extends vscode.TreeItem {
 			arguments: [binary],
 			title: ""
 		};
-		this.iconPath = "./images/icon.png";
+		this.iconPath = "../images/icon.png";
 	}
 
 	addRun(details: any) {
