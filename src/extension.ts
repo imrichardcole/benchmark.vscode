@@ -1,36 +1,32 @@
 import * as vscode from 'vscode';
-import { exec } from 'child_process';
-import { stdout } from 'process';
 
 export function activate(context: vscode.ExtensionContext) {
 
-	const paths = [
-		"C:/sandbox/work/vscode/benchmark.vscode/benchmark/build/Release/benchmark_heavy_math.exe",
-		"C:/sandbox/work/vscode/benchmark.vscode/benchmark/build/Release/benchmark_sample.exe",
-		"C:/sandbox/work/vscode/benchmark.vscode/benchmark/build/Release/benchmark_stress.exe",
-		"C:/sandbox/work/vscode/benchmark.vscode/benchmark/build/Release/benchmark_string_validation.exe",
+	let elements = [
+		new BenchmarkBinary("benchmark_heavy_maths"),
+		new BenchmarkBinary("benchmark_strings"),
 	];
+	const provider = new BenchmarkDataProvider(elements);
 
-	const provider = new BenchmarkDataProvider(paths);
-
-	vscode.commands.registerCommand('benchmark-vscode.runBinary', () => {
-		console.log("binary command has been run");
-	});
-
-	vscode.commands.registerCommand('benchmark-vscode.runTreeCommand', (path) => {
-		console.log("this would run " + path);
+	vscode.commands.registerCommand('benchmark-vscode.runBenchmark', (benchmarkBinary) => {
+		console.log("Running " + benchmarkBinary.name);
 		const { spawn } = require('node:child_process');
-		const benchmark_binary = spawn(path, ["--benchmark_format=json"]);
-
+		const fullPath = `C:/sandbox/work/vscode/benchmark.vscode/benchmark/build/Release/${ benchmarkBinary.name }.exe`;
+		const benchmark_binary = spawn(fullPath, ["--benchmark_format=json"]);
 		var scriptOutput = "";
 		benchmark_binary.on('exit', function (code: any) {
 			console.log("process exited with code - " + code);
 			try {
 				const output_json = JSON.parse(scriptOutput.toString());
-				vscode.window.showInformationMessage("Benchmark: finished running " + path);
+				output_json["benchmarks"].forEach((element: { [x: string]: string; }) => {
+					let real_time = Math.round(parseFloat(element["real_time"]));
+					benchmarkBinary.addResult(element["name"] + ": " + element["iterations"] + " iterations - " + real_time + " " + element["time_unit"]);
+				});
+				vscode.window.showInformationMessage("Benchmark: finished running benchmark");
+				provider.refresh();
 			} catch (e: any) {
 				const result = e.message;
-				vscode.window.showErrorMessage("Benchmark: issue running " + path);
+				vscode.window.showErrorMessage("Benchmark: issue running benchmark");
 			}
 		});
 		benchmark_binary.stdout.on('data', (data: any) => {
@@ -39,41 +35,32 @@ export function activate(context: vscode.ExtensionContext) {
 
 	});
 
-	vscode.window.registerTreeDataProvider('benchmarks-data', provider);
-	vscode.commands.registerCommand('benchmark-vscode.refresh', () => {
-		console.log("refresh command has been run");
-		provider.refresh();
-	});
+
+	vscode.window.registerTreeDataProvider("benchmarks", provider);
 }
 
-class BenchmarkDataProvider implements vscode.TreeDataProvider<BenchmarkBinary> {
+export function deactivate() {}
 
-	private _onDidChangeTreeData: vscode.EventEmitter<BenchmarkBinary | undefined | null | void> = new vscode.EventEmitter<BenchmarkBinary | undefined | null | void>();
-	readonly onDidChangeTreeData: vscode.Event<BenchmarkBinary | undefined | null | void> = this._onDidChangeTreeData.event;
+class BenchmarkDataProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
+	
+	private _onDidChangeTreeData: vscode.EventEmitter<vscode.TreeItem | undefined> = new vscode.EventEmitter<vscode.TreeItem | undefined>();
+  	readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined> = this._onDidChangeTreeData.event;
 
-	binaries: BenchmarkBinary[] = [];
+	elements: vscode.TreeItem[];
 
-	constructor(paths: string[]) {
-		paths.forEach((path: string) => {
-			this.binaries.push(new BenchmarkBinary(path));
-		});
+	constructor(elements: vscode.TreeItem[]) {
+		this.elements = elements;
 	}
 
-	addData(element: any) {
-		//const benchmark = new BenchmarkItem(element);
-		//this.data.push(benchmark);
-		//this.onDidChangeTreeData;
-	}
-
-	getTreeItem(element: BenchmarkBinary): vscode.TreeItem | Thenable<vscode.TreeItem> {
+	getTreeItem(element: vscode.TreeItem): vscode.TreeItem | Thenable<vscode.TreeItem> {
 		return element;
 	}
 
-	getChildren(element?: BenchmarkBinary|undefined): vscode.ProviderResult<BenchmarkBinary[]> {
-		if (element === undefined) {
-			return this.binaries;
-		}
-		return[];
+	getChildren(element?: BenchmarkBinary | undefined): vscode.ProviderResult<vscode.TreeItem[]> {
+		if(element === undefined) {
+			return this.elements;
+		} 
+		return element.results;
 	}
 
 	refresh(): void {
@@ -84,38 +71,40 @@ class BenchmarkDataProvider implements vscode.TreeDataProvider<BenchmarkBinary> 
 
 class BenchmarkBinary extends vscode.TreeItem {
 
-	binary;
-	runs: BenchmarkItem[];
-	command: vscode.Command;
+	name: string;
+	results: vscode.TreeItem[];
 
-	constructor(binary: string) {
-		super(binary);
-		this.binary = binary;
-		this.runs = [];
+	constructor(name: string, results?: BenchmarkResult[]) {
+		super(name,
+			results === undefined ? vscode.TreeItemCollapsibleState.None : vscode.TreeItemCollapsibleState.Expanded
+		);
+		this.results = [];
+		this.iconPath =  new vscode.ThemeIcon('testing-run-all-icon');
 		this.command = {
-			command: "benchmark-vscode.runTreeCommand",
-			arguments: [binary],
+			command: "benchmark-vscode.runBenchmark",
+			arguments: [this],
 			title: ""
 		};
-		this.iconPath = "../images/icon.png";
+		this.name = name;
 	}
 
-	addRun(details: any) {
-
-	}
-
-}
-
-class BenchmarkItem extends vscode.TreeItem {
-
-	name;
-
-	constructor(details: any) {
-		super(details.name);
-		this.name = details.name;
-		this.iconPath = vscode.ThemeIcon.File;
+	addResult(result: string) {
+		this.results.push(new BenchmarkResult(result));
+		this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
 	}
 
 }
 
-export function deactivate() { }
+class BenchmarkResult extends vscode.TreeItem {
+
+	constructor(name: string) {
+		super(name);
+		this.iconPath =  new vscode.ThemeIcon('testing-passed-icon');
+		this.command = {
+            title: name,
+            command: "vscode.show.openTextDocument",
+            arguments: [ "this is my example text!"]
+        };
+	}
+
+}

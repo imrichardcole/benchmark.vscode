@@ -19,6 +19,16 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "Benchmark",
+      "properties": {
+        "typescript.tsdk": {
+          "type": ["string", "null"],
+          "default": null,
+          "description": "Specifies the folder path containing the tsserver and lib*.d.ts files to use."
+        }
+      }
+    },
     "commands": [
       {
         "command": "benchmark-vscode.runBinary",
@@ -41,7 +51,7 @@
     "views": {
         "benchmarks": [
             {
-                "id": "benchmarks-data",
+                "id": "benchmarks",
                 "name": "Benchmarks"
             }
         ]
