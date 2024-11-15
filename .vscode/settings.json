@@ -11,6 +11,7 @@
 		"iosfwd": "cpp",
 		"xlocbuf": "cpp",
 		"format": "cpp",
-		"xstring": "cpp"
+		"xstring": "cpp",
+		"iostream": "cpp"
 	}
 }

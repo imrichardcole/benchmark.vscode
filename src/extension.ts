@@ -1,4 +1,5 @@
 import { stat } from 'fs';
+import { platform } from 'os';
 import * as vscode from 'vscode';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -15,8 +16,15 @@ export function activate(context: vscode.ExtensionContext) {
 		let files = fs.readdirSync(benchmark_directory);
 		files.forEach((file: any) => {
 			let full_benchmark_path = benchmark_directory + "/" + file;
-			if(full_benchmark_path.endsWith(".exe")) {
-				elements.push(new BenchmarkBinary(file, full_benchmark_path));
+			if(process.platform === "win32") {
+				if(full_benchmark_path.endsWith(".exe")) {
+					elements.push(new BenchmarkBinary(file, full_benchmark_path));
+				}
+			} else if (process.platform in ["linux", "darwin"]) {
+				file = fs.statSync(full_benchmark_path);
+				if(file.mode === "33261") {
+					elements.push(new BenchmarkBinary(file, full_benchmark_path));
+				}
 			}
 		});
 		if(elements.length === 0) {
@@ -61,6 +69,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	vscode.commands.registerCommand('benchmark-vscode.runBenchmarkBinary', (benchmarkBinary) => {
 		const { spawn } = require('node:child_process');
+		benchmarkBinary.iconPath = new vscode.ThemeIcon("loading~spin");
 		const benchmark_binary = spawn(benchmarkBinary.full_path, ["--benchmark_format=json"]);
 		var scriptOutput = "";
 		benchmark_binary.on('exit', function (code: any) {
@@ -137,12 +146,13 @@ class BenchmarkBinary extends vscode.TreeItem {
 	constructor(name: string, full_path: string) {
 		super(name);
 		this.full_path = full_path;
-		this.iconPath = new vscode.ThemeIcon('testing-run-all-icon');
+		this.iconPath = new vscode.ThemeIcon('question', new vscode.ThemeColor("#FFFF00"));
 		this.name = name;
 		this.contextValue = 'benchmarkbinary';
 	}
 
 	addBenchmark(name: string) {
+		this.iconPath = new vscode.ThemeIcon('sync', new vscode.ThemeColor("#FFFF00"));
 		this.has_run = true;
 		this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
 		if(this.benchmark_map.get(name) === undefined) {
