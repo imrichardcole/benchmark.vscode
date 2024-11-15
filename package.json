@@ -4,10 +4,10 @@
   "displayName": "benchmark-vscode",
   "description": "An extension for working with Google's benchmark cpp library from within vscode",
   "icon": "images/logo.png",
-  "version": "0.0.2",
-  "repository": { 
-    "type": "git", 
-    "url": "https://github.com/imrichardcole/benchmark.vscode" 
+  "version": "0.0.3",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/imrichardcole/benchmark.vscode"
   },
   "engines": {
     "vscode": "^1.92.0"
@@ -15,8 +15,7 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-  ],
+  "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
     "configuration": {
@@ -53,20 +52,20 @@
     ],
     "viewsContainers": {
       "activitybar": [
-          {
-              "id": "benchmarks",
-              "title": "Benchmarks",
-              "icon": "images/icon.png"
-          }
+        {
+          "id": "benchmarks",
+          "title": "Benchmarks",
+          "icon": "images/icon.png"
+        }
       ]
     },
     "views": {
-        "benchmarks": [
-            {
-                "id": "benchmarks",
-                "name": "Benchmarks"
-            }
-        ]
+      "benchmarks": [
+        {
+          "id": "benchmarks",
+          "name": "Benchmarks"
+        }
+      ]
     }
   },
   "scripts": {
