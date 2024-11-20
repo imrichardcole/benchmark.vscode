@@ -39,6 +39,15 @@ export function activate(context: vscode.ExtensionContext) {
 		return iterations.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 	}
 
+	vscode.commands.registerCommand('benchmark-vscode.showBenchmarkDetails', (benchmark) => {
+		let panel = BenchmarkDetailsPanel.createOrShow(context.extensionUri, benchmark);
+		panel._panel.webview.postMessage({ data: "Hello world" });
+	});
+
+	vscode.commands.registerCommand('benchmark-vscode.detailedView', () => {
+		console.log("this will open default view");
+	});
+
 	vscode.commands.registerCommand('benchmark-vscode.runBenchmark', (benchmark) => {
 		const { spawn } = require('node:child_process');
 		const benchmark_binary = spawn(benchmark.full_path, ["--benchmark_format=json", "--benchmark_filter=" + benchmark.label]);
@@ -98,6 +107,89 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	vscode.window.registerTreeDataProvider("benchmarks", provider);
+}
+
+function getWebviewOptions(extensionUri: vscode.Uri): vscode.WebviewOptions {
+	return {
+		enableScripts: true,
+		localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media')]
+	};
+}
+
+class BenchmarkDetailsPanel {
+
+	public static currentPanel: BenchmarkDetailsPanel | undefined;
+	public readonly _panel: vscode.WebviewPanel;
+	private readonly _extensionUri: vscode.Uri;
+	public static readonly viewType = 'benchmarkDetails';
+
+	public static createOrShow(extensionUri: vscode.Uri, benchmark: Benchmark): BenchmarkDetailsPanel {
+		
+		const column = vscode.window.activeTextEditor
+			? vscode.window.activeTextEditor.viewColumn
+			: undefined;
+
+		//if (BenchmarkDetailsPanel.currentPanel) {
+		//	BenchmarkDetailsPanel.currentPanel._panel.reveal(column);
+		//	return;
+		//}
+
+		const panel = vscode.window.createWebviewPanel(
+			BenchmarkDetailsPanel.viewType,
+			benchmark.name,
+			column || vscode.ViewColumn.One,
+			getWebviewOptions(extensionUri),
+		);
+
+		BenchmarkDetailsPanel.currentPanel = new BenchmarkDetailsPanel(panel, extensionUri, benchmark);
+		return BenchmarkDetailsPanel.currentPanel;
+	}
+
+	private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, benchmark: Benchmark) {
+
+		this._panel = panel;
+		this._extensionUri = extensionUri;
+
+		this._panel.webview.html = `<!DOCTYPE html>
+			<html lang="en">
+				<h1>${benchmark.name}</h1>
+				<h3>${benchmark.results.length} runs in total</h3>
+				<body>
+					<h1 id="lines-of-code-counter">${benchmark.results.length}</h1>
+				    <div style="width: 800px;"><canvas id="graph"></canvas></div>
+					<script>
+						(async function() {
+						const data = [
+							{ year: 2010, count: 10 },
+							{ year: 2011, count: 20 },
+							{ year: 2012, count: 15 },
+							{ year: 2013, count: 25 },
+							{ year: 2014, count: 22 },
+							{ year: 2015, count: 30 },
+							{ year: 2016, count: 28 },
+						];
+
+						new Chart(
+							document.getElementById('graph'),
+							{
+							type: 'bar',
+							data: {
+								labels: data.map(row => row.year),
+								datasets: [
+								{
+									label: 'Acquisitions by year',
+									data: data.map(row => row.count)
+								}
+								]
+							}
+							}
+						);
+						})();
+					</script>
+				</body>
+			</html>`;
+	}
+
 }
 
 export function deactivate() { }
@@ -169,10 +261,13 @@ class Benchmark extends vscode.TreeItem {
 	
 	results: BenchmarkResult[] = [];
 	full_path: string;
+	name: string;
+
 	constructor(name: string, full_path: string) {
 		super(name);
 		this.contextValue = 'benchmark';
 		this.full_path = full_path;
+		this.name = name;
 	}
 
 	addResult(real_time: number, time_unit: string, iterations: number) {
