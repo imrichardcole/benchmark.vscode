@@ -20,9 +20,14 @@ export function activate(context: vscode.ExtensionContext) {
 				if(full_benchmark_path.endsWith(".exe")) {
 					elements.push(new BenchmarkBinary(file, full_benchmark_path));
 				}
-			} else if (process.platform in ["linux", "darwin"]) {
-				file = fs.statSync(full_benchmark_path);
-				if(file.mode === "33261") {
+			} else if (process.platform === "linux") {
+				let file_stats = fs.statSync(full_benchmark_path);
+				if(file_stats.mode === 33261) {
+					elements.push(new BenchmarkBinary(file, full_benchmark_path));
+				}
+			} else if (process.platform === "darwin") {
+				let file_stats = fs.statSync(full_benchmark_path);
+				if(file_stats.mode === 33261) {
 					elements.push(new BenchmarkBinary(file, full_benchmark_path));
 				}
 			}
@@ -39,9 +44,19 @@ export function activate(context: vscode.ExtensionContext) {
 		return iterations.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 	}
 
+	vscode.commands.registerCommand('benchmark-vscode.showBenchmarkDetails', (benchmark) => {
+		let panel = BenchmarkDetailsPanel.createOrShow(context.extensionUri, benchmark);
+		panel._panel.webview.postMessage({ data: "Hello world" });
+	});
+
+	vscode.commands.registerCommand('benchmark-vscode.detailedView', () => {
+		console.log("this will open default view");
+	});
+
 	vscode.commands.registerCommand('benchmark-vscode.runBenchmark', (benchmark) => {
 		const { spawn } = require('node:child_process');
 		const benchmark_binary = spawn(benchmark.full_path, ["--benchmark_format=json", "--benchmark_filter=" + benchmark.label]);
+		provider.refresh();
 		var scriptOutput = "";
 		benchmark_binary.on('exit', function (code: any) {
 			try {
@@ -71,6 +86,7 @@ export function activate(context: vscode.ExtensionContext) {
 		const { spawn } = require('node:child_process');
 		benchmarkBinary.iconPath = new vscode.ThemeIcon("loading~spin");
 		const benchmark_binary = spawn(benchmarkBinary.full_path, ["--benchmark_format=json"]);
+		provider.refresh();
 		var scriptOutput = "";
 		benchmark_binary.on('exit', function (code: any) {
 			try {
@@ -98,6 +114,55 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	vscode.window.registerTreeDataProvider("benchmarks", provider);
+}
+
+function getWebviewOptions(extensionUri: vscode.Uri): vscode.WebviewOptions {
+	return {
+		enableScripts: true,
+		localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media')]
+	};
+}
+
+class BenchmarkDetailsPanel {
+
+	public static currentPanel: BenchmarkDetailsPanel | undefined;
+	public readonly _panel: vscode.WebviewPanel;
+	private readonly _extensionUri: vscode.Uri;
+	public static readonly viewType = 'benchmarkDetails';
+
+	public static createOrShow(extensionUri: vscode.Uri, benchmark: Benchmark): BenchmarkDetailsPanel {
+		
+		const column = vscode.window.activeTextEditor
+			? vscode.window.activeTextEditor.viewColumn
+			: undefined;
+
+		const panel = vscode.window.createWebviewPanel(
+			BenchmarkDetailsPanel.viewType,
+			benchmark.name,
+			column || vscode.ViewColumn.One,
+			getWebviewOptions(extensionUri),
+		);
+
+		BenchmarkDetailsPanel.currentPanel = new BenchmarkDetailsPanel(panel, extensionUri, benchmark);
+		return BenchmarkDetailsPanel.currentPanel;
+	}
+
+	private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, benchmark: Benchmark) {
+
+		this._panel = panel;
+		this._extensionUri = extensionUri;
+
+		this._panel.webview.html = `<!DOCTYPE html>
+			<html lang="en">
+				<h1>${benchmark.name}</h1>
+				<h3>${benchmark.results.length} runs in total</h3>
+				<h4>${benchmark.full_path}</h4>
+				<body>
+					${benchmark.resultsAsHTMLTable()}
+				</body>
+			</html>`;
+	}
+
 }
 
 export function deactivate() { }
@@ -146,13 +211,13 @@ class BenchmarkBinary extends vscode.TreeItem {
 	constructor(name: string, full_path: string) {
 		super(name);
 		this.full_path = full_path;
-		this.iconPath = new vscode.ThemeIcon('question', new vscode.ThemeColor("#FFFF00"));
+		this.iconPath = new vscode.ThemeIcon('question');
 		this.name = name;
 		this.contextValue = 'benchmarkbinary';
 	}
 
 	addBenchmark(name: string) {
-		this.iconPath = new vscode.ThemeIcon('sync', new vscode.ThemeColor("#FFFF00"));
+		this.iconPath = new vscode.ThemeIcon('beaker');
 		this.has_run = true;
 		this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
 		if(this.benchmark_map.get(name) === undefined) {
@@ -169,10 +234,13 @@ class Benchmark extends vscode.TreeItem {
 	
 	results: BenchmarkResult[] = [];
 	full_path: string;
+	name: string;
+
 	constructor(name: string, full_path: string) {
 		super(name);
 		this.contextValue = 'benchmark';
 		this.full_path = full_path;
+		this.name = name;
 	}
 
 	addResult(real_time: number, time_unit: string, iterations: number) {
@@ -180,13 +248,28 @@ class Benchmark extends vscode.TreeItem {
 		this.results.push(result);
 		this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
 	}
+
+	resultsAsHTMLTable(): string {
+		let table = "<table border=\"1\"><tr><td>Timing</td><td>Iterations</td></tr>";
+		for (const result of this.results) {
+			table +=  `<tr><td>${result.real_time} (${result.time_unit})</td><td>${result.iterations}</td></tr>`;
+		}
+		return table += "</table>";
+	}
 }
 
 class BenchmarkResult extends vscode.TreeItem {
 	
+	real_time: number;
+	iterations: number;
+	time_unit: string;
+
 	constructor(real_time: number, time_unit: string, iterations: number) {
 		super(new Date().toLocaleDateString() + ". " + real_time + time_unit + " - " + iterations + " iterations");
 		this.iconPath = new vscode.ThemeIcon('testing-passed-icon');
+		this.iterations = iterations;
+		this.time_unit = time_unit;
+		this.real_time = real_time;
 	}
 	contextValue = 'benchmark.extension.benchmark.result';
 }
