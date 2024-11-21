@@ -8,8 +8,16 @@ Building examples included with this project
 This project includes a set of simple benchmarks to use with the extension.  To build them:
 
     cd sample_benchmarks
+
+Windows:
+
     cmake -S . -B build
     cmake --build build --config Release
+
+Other:
+
+    cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+    cmake --build build
 
 N.B this assumes that benchmark is built and available.
 
@@ -33,6 +41,8 @@ After the benchmark has finished executing, the included benchmark names will be
 ![alt text](images/output.png "Benchmark names and initial execution")
 
 Each individual benchmark can then be run by right clicking and selecting "Run this benchmark"
+
+You can also view a basic overview of all runs of a given benchmark by right clicking and selecting "View benchmark details"
 
 Feedback
 ---
