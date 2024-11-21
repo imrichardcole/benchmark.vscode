@@ -6,3 +6,4 @@ node_modules
 
 .DS_Store
 sample_benchmarks/build/
+sample_benchmarks/.vscode
