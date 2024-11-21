@@ -51,6 +51,7 @@ export function activate(context: vscode.ExtensionContext) {
 	vscode.commands.registerCommand('benchmark-vscode.runBenchmark', (benchmark) => {
 		const { spawn } = require('node:child_process');
 		const benchmark_binary = spawn(benchmark.full_path, ["--benchmark_format=json", "--benchmark_filter=" + benchmark.label]);
+		provider.refresh();
 		var scriptOutput = "";
 		benchmark_binary.on('exit', function (code: any) {
 			try {
@@ -80,6 +81,7 @@ export function activate(context: vscode.ExtensionContext) {
 		const { spawn } = require('node:child_process');
 		benchmarkBinary.iconPath = new vscode.ThemeIcon("loading~spin");
 		const benchmark_binary = spawn(benchmarkBinary.full_path, ["--benchmark_format=json"]);
+		provider.refresh();
 		var scriptOutput = "";
 		benchmark_binary.on('exit', function (code: any) {
 			try {
@@ -129,11 +131,6 @@ class BenchmarkDetailsPanel {
 			? vscode.window.activeTextEditor.viewColumn
 			: undefined;
 
-		//if (BenchmarkDetailsPanel.currentPanel) {
-		//	BenchmarkDetailsPanel.currentPanel._panel.reveal(column);
-		//	return;
-		//}
-
 		const panel = vscode.window.createWebviewPanel(
 			BenchmarkDetailsPanel.viewType,
 			benchmark.name,
@@ -154,38 +151,9 @@ class BenchmarkDetailsPanel {
 			<html lang="en">
 				<h1>${benchmark.name}</h1>
 				<h3>${benchmark.results.length} runs in total</h3>
+				<h4>${benchmark.full_path}</h4>
 				<body>
-					<h1 id="lines-of-code-counter">${benchmark.results.length}</h1>
-				    <div style="width: 800px;"><canvas id="graph"></canvas></div>
-					<script>
-						(async function() {
-						const data = [
-							{ year: 2010, count: 10 },
-							{ year: 2011, count: 20 },
-							{ year: 2012, count: 15 },
-							{ year: 2013, count: 25 },
-							{ year: 2014, count: 22 },
-							{ year: 2015, count: 30 },
-							{ year: 2016, count: 28 },
-						];
-
-						new Chart(
-							document.getElementById('graph'),
-							{
-							type: 'bar',
-							data: {
-								labels: data.map(row => row.year),
-								datasets: [
-								{
-									label: 'Acquisitions by year',
-									data: data.map(row => row.count)
-								}
-								]
-							}
-							}
-						);
-						})();
-					</script>
+					${benchmark.resultsAsHTMLTable()}
 				</body>
 			</html>`;
 	}
@@ -238,13 +206,13 @@ class BenchmarkBinary extends vscode.TreeItem {
 	constructor(name: string, full_path: string) {
 		super(name);
 		this.full_path = full_path;
-		this.iconPath = new vscode.ThemeIcon('question', new vscode.ThemeColor("#FFFF00"));
+		this.iconPath = new vscode.ThemeIcon('question');
 		this.name = name;
 		this.contextValue = 'benchmarkbinary';
 	}
 
 	addBenchmark(name: string) {
-		this.iconPath = new vscode.ThemeIcon('sync', new vscode.ThemeColor("#FFFF00"));
+		this.iconPath = new vscode.ThemeIcon('beaker');
 		this.has_run = true;
 		this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
 		if(this.benchmark_map.get(name) === undefined) {
@@ -275,13 +243,28 @@ class Benchmark extends vscode.TreeItem {
 		this.results.push(result);
 		this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
 	}
+
+	resultsAsHTMLTable(): string {
+		let table = "<table border=\"1\"><tr><td>Timing</td><td>Iterations</td></tr>";
+		for (const result of this.results) {
+			table +=  `<tr><td>${result.real_time} (${result.time_unit})</td><td>${result.iterations}</td></tr>`;
+		}
+		return table += "</table>";
+	}
 }
 
 class BenchmarkResult extends vscode.TreeItem {
 	
+	real_time: number;
+	iterations: number;
+	time_unit: string;
+
 	constructor(real_time: number, time_unit: string, iterations: number) {
 		super(new Date().toLocaleDateString() + ". " + real_time + time_unit + " - " + iterations + " iterations");
 		this.iconPath = new vscode.ThemeIcon('testing-passed-icon');
+		this.iterations = iterations;
+		this.time_unit = time_unit;
+		this.real_time = real_time;
 	}
 	contextValue = 'benchmark.extension.benchmark.result';
 }
